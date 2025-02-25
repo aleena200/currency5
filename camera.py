@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.preprocessing import image
-from PIL import Image
+from PIL import Image, ImageOps
 from gtts import gTTS  # Google Text-to-Speech
 import tempfile
 import os
@@ -22,21 +22,22 @@ class_labels = {
 }
 
 def preprocess_image(img):
-    # Resize image
+    # Ensure image is in RGB and resize
+    img = img.convert("RGB")
     img = img.resize((224, 224))
-    # Convert image to numpy array and normalize
+    
+    # Optional: Adjust brightness/contrast automatically
+    img = ImageOps.autocontrast(img)
+    
     img_array = np.array(img) / 255.0
-    # Debug: show image shape and pixel range
     st.write("Preprocessed image shape:", img_array.shape)
     st.write("Pixel range:", img_array.min(), "-", img_array.max())
-    # Add batch dimension
     img_array = np.expand_dims(img_array, axis=0)
     return img_array
 
 def predict_class(img):
     processed_img = preprocess_image(img)
     predictions = model.predict(processed_img)
-    # Debug: show raw predictions from model
     st.write("Raw predictions:", predictions)
     class_id = np.argmax(predictions)
     predicted_label = list(class_labels.keys())[class_id]
@@ -65,16 +66,13 @@ if "voice_played" not in st.session_state:
 uploaded_file = st.file_uploader("Upload an Image", type=["jpg", "jpeg", "png"])
 camera_input = st.camera_input("Take a picture")
 
-# Check if an image is uploaded or captured from the camera
 if uploaded_file is not None:
     image_data = Image.open(uploaded_file)
-    # Debug: Check and convert image mode if needed
     st.write("Uploaded image mode:", image_data.mode)
     image_data = image_data.convert("RGB")
     st.image(image_data, caption="Uploaded Image", use_column_width=True)
 elif camera_input is not None:
     image_data = Image.open(camera_input)
-    # Debug: Check and convert image mode if needed
     st.write("Camera image mode:", image_data.mode)
     image_data = image_data.convert("RGB")
     st.image(image_data, caption="Captured Image", use_column_width=True)
