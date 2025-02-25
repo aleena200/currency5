@@ -22,24 +22,32 @@ class_labels = {
 }
 
 def preprocess_image(img):
-    img = img.resize((224, 224))  # Resize to match model input size
-    img_array = np.array(img) / 255.0  # Normalize pixel values
-    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+    # Resize image
+    img = img.resize((224, 224))
+    # Convert image to numpy array and normalize
+    img_array = np.array(img) / 255.0
+    # Debug: show image shape and pixel range
+    st.write("Preprocessed image shape:", img_array.shape)
+    st.write("Pixel range:", img_array.min(), "-", img_array.max())
+    # Add batch dimension
+    img_array = np.expand_dims(img_array, axis=0)
     return img_array
 
 def predict_class(img):
     processed_img = preprocess_image(img)
     predictions = model.predict(processed_img)
+    # Debug: show raw predictions from model
+    st.write("Raw predictions:", predictions)
     class_id = np.argmax(predictions)
     predicted_label = list(class_labels.keys())[class_id]
     return class_labels[predicted_label]
 
 def speak(text):
     """Convert text to speech and return audio file path."""
-    tts = gTTS(text=text, lang='en')  # Generate speech
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")  # Create temp file
-    tts.save(temp_file.name)  # Save speech to temp file
-    return temp_file.name  # Return path to audio file
+    tts = gTTS(text=text, lang='en')
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+    tts.save(temp_file.name)
+    return temp_file.name
 
 # Streamlit UI
 st.title("Currency Note Classification for the Visually Impaired")
@@ -51,7 +59,6 @@ if "voice_played" not in st.session_state:
     audio_file = open(voice_command_audio, 'rb')
     st.audio(audio_file, format="audio/mp3", autoplay=True)
     st.session_state.voice_played = True
-    # Remove the temporary file after playing
     os.remove(voice_command_audio)
 
 # Option to upload a file or use the camera
@@ -60,12 +67,16 @@ camera_input = st.camera_input("Take a picture")
 
 # Check if an image is uploaded or captured from the camera
 if uploaded_file is not None:
-    # Convert to RGB to ensure consistent preprocessing
-    image_data = Image.open(uploaded_file).convert("RGB")
+    image_data = Image.open(uploaded_file)
+    # Debug: Check and convert image mode if needed
+    st.write("Uploaded image mode:", image_data.mode)
+    image_data = image_data.convert("RGB")
     st.image(image_data, caption="Uploaded Image", use_column_width=True)
 elif camera_input is not None:
-    # Convert to RGB in case the camera input is in another mode
-    image_data = Image.open(camera_input).convert("RGB")
+    image_data = Image.open(camera_input)
+    # Debug: Check and convert image mode if needed
+    st.write("Camera image mode:", image_data.mode)
+    image_data = image_data.convert("RGB")
     st.image(image_data, caption="Captured Image", use_column_width=True)
 else:
     image_data = None
